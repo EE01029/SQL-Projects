@@ -1,2 +1,2 @@
 # SQL-Projects
-Contains the Projects on SQL which I have done
+Contains the Projects on SQL
