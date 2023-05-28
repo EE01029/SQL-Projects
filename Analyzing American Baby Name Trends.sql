@@ -1,121 +1,84 @@
+                          --Analyzing American Baby Name Trends
+
+
+
 --Creating the table 'USA_Baby_Names'
 create table usa_baby_names(year int, first_name varchar, sex varchar, num int);
 
 copy usa_baby_names(year, first_name, sex, num)
 from 'C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PostgreSQL 15\usa_baby_names.csv' delimiter ',' header csv;
 
---Classic American Names 
---Male
-select distinct first_name
-from usa_baby_names
-where sex='M'
-order by first_name;
+         
+/*-------------------------------------------------------------------------------------------------------------------------------------------*/
 
---Female
-select distinct first_name
+--The most years at number one
+select usa_baby_names.first_name,count(usa_baby_names.first_name)
 from usa_baby_names
-where sex='F'
-order by first_name;
-
---Timeless or Trendy -> MALE category
-select usa_baby_names.first_name as trending_names
+join (select year, max(num) as num
 from usa_baby_names
-join (select year, max(num) as max_num
-	 from usa_baby_names
-	  where sex='M'
-	  group by year
-	  order by year) as num_table on usa_baby_names.num=num_table.max_num
+group by year
+order by year) as yr on yr.num=usa_baby_names.num
 group by usa_baby_names.first_name
-order by count(usa_baby_names.first_name) desc;
+order by count(usa_baby_names.first_name) desc
+limit 2;
 
-
---Timeless or Trendy -> FEMALE category
-select usa_baby_names.first_name as trending_names
+--Top Male names over the years
+select usa_baby_names.first_name,usa_baby_names.year
 from usa_baby_names
-join (select year, max(num) as max_num
-	 from usa_baby_names
-	  where sex='F'
-	  group by year
-	  order by year) as num_table on usa_baby_names.num=num_table.max_num
-group by usa_baby_names.first_name
-order by count(usa_baby_names.first_name) desc;
-
---Top-Ranked female names since 1920
-select usa_baby_names.first_name as top_ranked_female, num_table.year
+join (select year, max(num) as num
 from usa_baby_names
-join (select year, max(num) as max_num
-	 from usa_baby_names
-	  where sex='F'
-	  group by year
-	  order by year) as num_table on usa_baby_names.num=num_table.max_num;
-
---Picking a baby name 
---Male
-select usa_baby_names.first_name as most_probable_name, num_table.year
-from usa_baby_names
-join (select year, max(num) as max_num
-	 from usa_baby_names
-	  where sex='M'
-	  group by year
-	  order by year) as num_table on usa_baby_names.num=num_table.max_num
-order by year desc;
-
---Female
-select usa_baby_names.first_name as most_probable_name, num_table.year
-from usa_baby_names
-join (select year, max(num) as max_num
-	 from usa_baby_names
-	  where sex='F'
-	  group by year
-	  order by year) as num_table on usa_baby_names.num=num_table.max_num
-order by year desc;
-
---The Olivia Expanision
-select year, first_name, num, sex
-from usa_baby_names
-where first_name='Olivia';
+group by year
+order by year) as yr on yr.num=usa_baby_names.num
+where sex = 'M';
 
 --Many males with same name
-select first_name, sum(num) as frequency
+select first_name,sum(num) as num
 from usa_baby_names
 where sex='M'
 group by first_name
-order by frequency desc;
+order by first_name;
 
---Top male names over the years
-select usa_baby_names.first_name, num_table.year
+--The Olivia Expansion
+select *
 from usa_baby_names
-join (select year, max(num) as max_num
-	 from usa_baby_names
-	  where sex='M'
-	  group by year
-	  order by year) as num_table on usa_baby_names.num=num_table.max_num;
+where first_name='Olivia';
 
---The most years at number one -> MALE category
-select usa_baby_names.first_name,count(usa_baby_names.first_name) as numberoftimes
+--Picking a baby name
+--Picking a male baby name in recent years
+select first_name, num as num_in_2020
 from usa_baby_names
-join (select year, max(num) as max_num
-	 from usa_baby_names
-	  where sex='M'
-	  group by year
-	  order by year) as num_table on usa_baby_names.num=num_table.max_num
-group by usa_baby_names.first_name
-order by count(usa_baby_names.first_name) desc
-limit 1;
+where year>2019 and sex='M'
+order by num desc;
 
---The most years at number one -> FEMALE category
-select usa_baby_names.first_name,count(usa_baby_names.first_name) as numberoftimes
+--Picking a female baby name in recent years
+select first_name, num as num_in_2020
 from usa_baby_names
-join (select year, max(num) as max_num
-	 from usa_baby_names
-	  where sex='F'
-	  group by year
-	  order by year) as num_table on usa_baby_names.num=num_table.max_num
-group by usa_baby_names.first_name
-order by count(usa_baby_names.first_name) desc
-limit 1;
+where year>2019 and sex='M'
+order by num desc;
 
 
 
+--Top Ranked Females since 1920
+select usa_baby_names.first_name,usa_baby_names.year
+from usa_baby_names
+join (select year, max(num) as num
+from usa_baby_names
+group by year
+order by year) as yr on yr.num=usa_baby_names.num
+where sex = 'F';
 
+--Timeless or Trendy
+select first_name,case when count(year)>80 then 'Classic'
+when count(year)>50 and count(year)<=80 then 'Semi-classic'
+when count(year)>20 and count(year)<=50 then 'Semi-trendy'
+else 'Trendy' end as timeless_or_trendy
+from usa_baby_names
+group by first_name
+order by first_name;
 
+--Classic American Names
+select first_name
+from usa_baby_names
+group by first_name
+having count(year)>80
+order by first_name;
